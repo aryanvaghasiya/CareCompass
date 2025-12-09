@@ -1,0 +1,24 @@
+services:
+  bandit:
+    build: ./main1
+    container_name: bandit_service
+    ports:
+      - "8000:8000"
+    restart: always
+
+  speciality:
+    build: ./main2
+    container_name: speciality_service
+    ports:
+      - "8082:5000"
+    restart: always
+
+  frontend:
+    build: .
+    container_name: frontend_app
+    ports:
+      - "5001:5001"
+    depends_on:
+      - bandit
+      - speciality
+    restart: always
