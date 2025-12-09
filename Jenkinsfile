@@ -135,6 +135,94 @@
 
 // -------------------------------------------------------------------------------------------------------------------------
 
+// pipeline {
+//     agent any
+    
+//     triggers {
+//         githubPush()
+//     }
+
+//     environment {
+//         // DockerHub repositories (CHANGE THESE TO YOUR DOCKERHUB NAMES)
+//         BANDIT_IMAGE       = "aryanvaghasiya/bandit-service"
+//         SPECIALITY_IMAGE   = "aryanvaghasiya/speciality-service"
+//         FRONTEND_IMAGE     = "aryanvaghasiya/frontend-service"
+
+//         // Ansible settings
+//         ANSIBLE_INVENTORY = "Ansible/hosts.ini"
+//         ANSIBLE_PLAYBOOK  = "Ansible/deploy.yml"
+//     }
+
+//     stages {
+        
+//         stage('Checkout Code') {
+//             steps {
+//                 git branch: 'main', url: 'https://github.com/aryanvaghasiya/CareCompass'
+//             }
+//         }
+
+//         stage('Install Dependencies & Test') {
+//             steps {
+//                 sh """
+//                 pip3 install -r requirements.txt
+//                 pytest --disable-warnings || true
+//                 """
+//             }
+//         }
+
+//         stage('Build Docker Images') {
+//             steps {
+//                 script {
+//                     echo "📦 Building Docker images..."
+
+//                     docker.build("${BANDIT_IMAGE}:${BUILD_NUMBER}", "./main1")
+//                     docker.build("${SPECIALITY_IMAGE}:${BUILD_NUMBER}", "./main2")
+//                     docker.build("${FRONTEND_IMAGE}:${BUILD_NUMBER}", ".")
+//                 }
+//             }
+//         }
+
+//         stage('Push Docker Images to DockerHub') {
+//             steps {
+//                 script {
+//                     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
+
+//                         docker.image("${BANDIT_IMAGE}:${BUILD_NUMBER}").push()
+//                         docker.image("${SPECIALITY_IMAGE}:${BUILD_NUMBER}").push()
+//                         docker.image("${FRONTEND_IMAGE}:${BUILD_NUMBER}").push()
+
+//                         // Push "latest"
+//                         docker.image("${BANDIT_IMAGE}:${BUILD_NUMBER}").push("latest")
+//                         docker.image("${SPECIALITY_IMAGE}:${BUILD_NUMBER}").push("latest")
+//                         docker.image("${FRONTEND_IMAGE}:${BUILD_NUMBER}").push("latest")
+//                     }
+//                 }
+//             }
+//         }
+
+//         stage('Deploy with Ansible') {
+//             steps {
+//                 sh """
+//                 ansible-playbook -i ${ANSIBLE_INVENTORY} ${ANSIBLE_PLAYBOOK} \
+//                     -e bandit_tag=${BUILD_NUMBER} \
+//                     -e speciality_tag=${BUILD_NUMBER} \
+//                     -e frontend_tag=${BUILD_NUMBER}
+//                 """
+//             }
+//         }
+//     }
+
+//     post {
+//         success {
+//             echo "🚀 Build #${BUILD_NUMBER} completed successfully!"
+//         }
+//         failure {
+//             echo "❌ Build FAILED — Check logs."
+//         }
+//     }
+// }
+//-----------------------------------------------------------------------------------------------------------------------------------
+
 pipeline {
     agent any
     
@@ -144,9 +232,9 @@ pipeline {
 
     environment {
         // DockerHub repositories (CHANGE THESE TO YOUR DOCKERHUB NAMES)
-        BANDIT_IMAGE       = "aryanvaghasiya/bandit-service"
-        SPECIALITY_IMAGE   = "aryanvaghasiya/speciality-service"
-        FRONTEND_IMAGE     = "aryanvaghasiya/frontend-service"
+        BANDIT_IMAGE        = "aryanvaghasiya/bandit-service"
+        SPECIALITY_IMAGE    = "aryanvaghasiya/speciality-service"
+        FRONTEND_IMAGE      = "aryanvaghasiya/frontend-service"
 
         // Ansible settings
         ANSIBLE_INVENTORY = "Ansible/hosts.ini"
@@ -213,6 +301,21 @@ pipeline {
     }
 
     post {
+        // This ensures the cleanup runs every time, regardless of success or failure.
+        always {
+            stage('Cleanup Docker Artifacts') {
+                steps {
+                    echo "🧹 Running Docker cleanup to free space..."
+                    // This command removes:
+                    // 1. All stopped containers
+                    // 2. All networks not used by at least one container
+                    // 3. All dangling images (images not associated with a named image)
+                    // 4. All build cache
+                    // -f (force) ensures it doesn't prompt for confirmation.
+                    sh 'docker system prune -f'
+                }
+            }
+        }
         success {
             echo "🚀 Build #${BUILD_NUMBER} completed successfully!"
         }
