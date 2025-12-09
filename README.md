@@ -1,4 +1,4 @@
-# ML-Driven Doctor Recommendation System
+# MLOPS Recommendation System - CareCompass
 
 ## Project Overview
 
