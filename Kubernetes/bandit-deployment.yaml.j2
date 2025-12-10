@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bandit-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bandit
+  template:
+    metadata:
+      labels:
+        app: bandit
+    spec:
+      containers:
+      - name: bandit
+        image: aryanvaghasiya/bandit-service:{{ bandit_tag }}
+        ports:
+        - containerPort: 8000
+        readinessProbe:
+          httpGet:
+            path: /docs
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /docs
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bandit-service
+spec:
+  selector:
+    app: bandit
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP
