@@ -1,0 +1,48 @@
+---
+- hosts: master
+  become: no
+  vars:
+    # These are passed from Jenkins:
+    # -e bandit_tag=5 -e speciality_tag=5 -e frontend_tag=5
+    bandit_image: "aryanvaghasiya/bandit-service"
+    speciality_image: "aryanvaghasiya/speciality-service"
+    frontend_image: "aryanvaghasiya/frontend-service"
+
+  tasks:
+
+    - name: "📥 Update Kubernetes manifests with latest Bandit tag"
+      template:
+        src: "../Kubernetes/bandit-deployment.yaml.j2"
+        dest: "/tmp/bandit-deployment.yaml"
+
+    - name: "📥 Update Kubernetes manifests with latest Speciality tag"
+      template:
+        src: "../Kubernetes/speciality-deployment.yaml.j2"
+        dest: "/tmp/speciality-deployment.yaml"
+
+    - name: "📥 Update Kubernetes manifests with latest Frontend tag"
+      template:
+        src: "../Kubernetes/frontend-deployment.yaml.j2"
+        dest: "/tmp/frontend-deployment.yaml"
+
+    - name: "🚀 Apply Bandit Deployment"
+      command: kubectl apply -f /tmp/bandit-deployment.yaml
+
+    - name: "🚀 Apply Speciality Deployment"
+      command: kubectl apply -f /tmp/speciality-deployment.yaml
+
+    - name: "🚀 Apply Frontend Deployment"
+      command: kubectl apply -f /tmp/frontend-deployment.yaml
+
+    - name: "🔍 Verify Rollout Status (Bandit)"
+      command: kubectl rollout status deployment/bandit-deployment --timeout=120s
+    
+    - name: "🔍 Verify Rollout Status (Speciality)"
+      command: kubectl rollout status deployment/speciality-deployment --timeout=120s
+
+    - name: "🔍 Verify Rollout Status (Frontend)"
+      command: kubectl rollout status deployment/frontend-deployment --timeout=120s
+
+    - name: "🎉 Deployment Completed"
+      debug:
+        msg: "Kubernetes deployment updated successfully with build tags."
