@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: speciality-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: speciality
+  template:
+    metadata:
+      labels:
+        app: speciality
+    spec:
+      containers:
+      - name: speciality
+        image: aryanvaghasiya/speciality-service:{{ speciality_tag }}
+        ports:
+        - containerPort: 5000
+        readinessProbe:
+          httpGet:
+            path: /predict
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /predict
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: speciality-service
+spec:
+  selector:
+    app: speciality
+  ports:
+  - port: 5000
+    targetPort: 5000
+  type: ClusterIP
