@@ -288,6 +288,45 @@ pipeline {
             }
         }
 
+        stage('Prune Old Docker Images') {
+            steps {
+                script {
+                    echo "🧹 Cleaning up old Docker images..."
+
+                    def images = [
+                        BANDIT_IMAGE,
+                        SPECIALITY_IMAGE,
+                        FRONTEND_IMAGE
+                    ]
+
+            images.each { img ->
+                sh """
+                echo "Pruning old images for ${img}"
+
+                # List all images of this repo, extract tags, sort numerically (latest = highest)
+                TAGS=\\$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "${img}" | grep -v latest | sed 's/.*://' | sort -nr)
+
+                # Count how many exist
+                COUNT=\\$(echo "\\$TAGS" | wc -l)
+
+                # If more than 2, delete older ones
+                if [ "\\$COUNT" -gt 2 ]; then
+                    # Skip top 2 tags, delete the rest
+                    OLD_TAGS=\\$(echo "\\$TAGS" | tail -n +3)
+
+                    for TAG in \\$OLD_TAGS; do
+                        echo "Removing old image: ${img}:\\$TAG"
+                        docker rmi "${img}:\\$TAG" || true
+                    done
+                fi
+                """
+            }
+        }
+    }
+}
+
+
+        
         stage('Deploy with Ansible') {
             steps {
                 sh """
@@ -300,30 +339,9 @@ pipeline {
         }
     }
 
-    post {
-        // This ensures the cleanup runs every time, regardless of success or failure.
-        always {
-            stage('Cleanup Docker Artifacts') {
-                steps {
-                    echo "🧹 Running Docker cleanup to free space..."
-                    // This command removes:
-                    // 1. All stopped containers
-                    // 2. All networks not used by at least one container
-                    // 3. All dangling images (images not associated with a named image)
-                    // 4. All build cache
-                    // -f (force) ensures it doesn't prompt for confirmation.
-                    sh 'docker system prune -f'
-                }
-            }
-        }
-        success {
-            echo "🚀 Build #${BUILD_NUMBER} completed successfully!"
-        }
-        failure {
-            echo "❌ Build FAILED — Check logs."
-        }
-    }
+
 }
+
 
 
 
