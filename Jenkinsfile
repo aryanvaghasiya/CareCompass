@@ -246,6 +246,9 @@ pipeline {
         // Ansible settings
         ANSIBLE_INVENTORY = "Ansible/hosts.ini"
         ANSIBLE_PLAYBOOK  = "Ansible/deploy.yml"
+
+        // REQUIRED FOR MINIKUBE DEPLOYMENT
+        KUBECONFIG = "/var/lib/jenkins/.kube/config"
     }
 
     stages {
@@ -388,6 +391,7 @@ pipeline {
         }
     }
 }
+
 
 
 
