@@ -1,4 +1,4 @@
-FROM aryanvaghasiya/carecompass-base:py3.11-carecompass-base:torch-2.5.1
+FROM aryanvaghasiya/carecompass-base:py3.11-carecompass-base-torch-2.5.1
 
 WORKDIR /app
 

@@ -94,7 +94,7 @@ pipeline {
                 script {
                     echo " Building Docker images..."
 
-                    def baseImage = "YOUR_DOCKERHUB_USERNAME/carecompass-base:py3.11-carecompass-base:torch-2.5.1" // <--- IMPORTANT: Change this to your Docker Hub username
+                    def baseImage = "aryanvaghasiya/carecompass-base:py3.11-carecompass-base-torch-2.5.1" // <--- IMPORTANT: Change this to your Docker Hub username
 
                     // Pull base to allow --cache-from to reuse layers
                     sh "docker pull ${baseImage} || true"
