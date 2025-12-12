@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This project implements an intelligent doctor recommendation system that identifies the medical specialty for a given set of symptoms and recommends doctors based on the predicted specialty. It uses two key services:
+This project implements an intelligent doctor recommendation system that identifies the medical specialty for a given set of symptoms and recommends doctors based on the predicted specialty. It uses two Key services:
 
 1. **Specialty Predictor Service**: A Flask-based REST API that takes symptoms as input and predicts the relevant medical specialty.
 2. **Doctor Recommendation Service**: A FastAPI-based service that provides doctor recommendations for a given specialty.
