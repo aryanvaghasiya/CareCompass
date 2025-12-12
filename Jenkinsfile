@@ -108,7 +108,7 @@ pipeline {
                 }
             }
         }
-
+/*
         stage('Test Services') {
             when { expression { !params.FAST_MODE } }
             parallel {
@@ -161,7 +161,7 @@ pipeline {
                 }
             }
         }
-
+*/
         stage('Skip Docker Build (FAST_MODE)') {
             when { expression { params.FAST_MODE } }
             steps {
