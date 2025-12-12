@@ -228,7 +228,7 @@ pipeline {
     parameters {
         booleanParam(
             name: 'FAST_MODE',
-            defaultValue: true,
+            defaultValue: false,
             description: 'Skip dependency install and Docker build/push to make the pipeline fast'
         )
     }
@@ -391,6 +391,7 @@ pipeline {
         }
     }
 }
+
 
 
 
