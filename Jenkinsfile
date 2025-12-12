@@ -32,7 +32,7 @@ pipeline {
         
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/aryanvaghasiya/CareCompass'
+                git branch: 'efficient-build', url: 'https://github.com/aryanvaghasiya/CareCompass'
             }
         }
 
@@ -173,16 +173,16 @@ pipeline {
             when { expression { !params.FAST_MODE } }
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-aryan-credentials') {
 
                         docker.image("${BANDIT_IMAGE}:${BUILD_NUMBER}").push()
                         docker.image("${SPECIALITY_IMAGE}:${BUILD_NUMBER}").push()
                         docker.image("${FRONTEND_IMAGE}:${BUILD_NUMBER}").push()
 
                         // Push "latest"
-                        docker.image("${BANDIT_IMAGE}:${BUILD_NUMBER}").push("latest")
-                        docker.image("${SPECIALITY_IMAGE}:${BUILD_NUMBER}").push("latest")
-                        docker.image("${FRONTEND_IMAGE}:${BUILD_NUMBER}").push("latest")
+                        // docker.image("${BANDIT_IMAGE}:${BUILD_NUMBER}").push("latest")
+                        // docker.image("${SPECIALITY_IMAGE}:${BUILD_NUMBER}").push("latest")
+                        // docker.image("${FRONTEND_IMAGE}:${BUILD_NUMBER}").push("latest")
                     }
                 }
             }
