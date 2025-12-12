@@ -266,6 +266,8 @@ pipeline {
             when { expression { !params.FAST_MODE } }
             steps {
                 sh """
+                python3 -m venv venv
+                . venv/bin/activate
                 pip3 install -r requirements.txt
                 pytest --disable-warnings || true
                 """
@@ -391,6 +393,7 @@ pipeline {
         }
     }
 }
+
 
 
 
