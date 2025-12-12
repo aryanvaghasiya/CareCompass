@@ -56,26 +56,28 @@ pipeline {
         ------------------------------------------------------------------------------------------------------------------------------*/
         
         //##############################################################################################
+        /*
         stage('Python setup & deps') {
-  agent {
-    docker {
-      image 'python:3.11-slim'
-      args '-u root:root'   // run as root so apt / pip works if needed
-    }
-  }
-  steps {
-    sh '''
-      set -e
-      python -m pip install --upgrade pip setuptools wheel
-      python -m venv venv
-      . venv/bin/activate
-      pip install --upgrade pip setuptools wheel
-      pip install -r requirements.txt
-      # run tests / lint etc. here
-    '''
-  }
-}
-//###################################################################################################
+          agent {
+            docker {
+              image 'python:3.11-slim'
+              args '-u root:root'   // run as root so apt / pip works if needed
+            }
+          }
+          steps {
+            sh '''
+              set -e
+              python -m pip install --upgrade pip setuptools wheel
+              python -m venv venv
+              . venv/bin/activate
+              pip install --upgrade pip setuptools wheel
+              pip install -r requirements.txt
+              # run tests / lint etc. here
+            '''
+          }
+        }
+        */
+        //###################################################################################################
         stage('Skip Install & Test (FAST_MODE)') {
             when { expression { params.FAST_MODE } }
             steps {
@@ -90,11 +92,72 @@ pipeline {
             when { expression { !params.FAST_MODE } }
             steps {
                 script {
-                    echo "📦 Building Docker images..."
+                    echo " Building Docker images..."
 
-                    docker.build("${BANDIT_IMAGE}:${BUILD_NUMBER}", "./main1")
-                    docker.build("${SPECIALITY_IMAGE}:${BUILD_NUMBER}", "./main2")
-                    docker.build("${FRONTEND_IMAGE}:${BUILD_NUMBER}", ".")
+                    def baseImage = "YOUR_DOCKERHUB_USERNAME/carecompass-base:py3.11-carecompass-base:torch-2.5.1" // <--- IMPORTANT: Change this to your Docker Hub username
+
+                    // Pull base to allow --cache-from to reuse layers
+                    sh "docker pull ${baseImage} || true"
+
+                    // Build with cache-from and tag
+                    sh """
+                        docker build --cache-from ${baseImage} -t ${BANDIT_IMAGE}:${BUILD_NUMBER} ./main1
+                        docker build --cache-from ${baseImage} -t ${SPECIALITY_IMAGE}:${BUILD_NUMBER} ./main2
+                        docker build --cache-from ${baseImage} -t ${FRONTEND_IMAGE}:${BUILD_NUMBER} .
+                    """
+                }
+            }
+        }
+
+        stage('Test Services') {
+            when { expression { !params.FAST_MODE } }
+            parallel {
+                stage('Test Bandit Service') {
+                    agent {
+                        docker {
+                            image "${BANDIT_IMAGE}:${BUILD_NUMBER}"
+                            args '-u 0:0'
+                        }
+                    }
+                    steps {
+                        sh '''
+                        echo "Running tests for Bandit Service..."
+                        python -m pip install pytest # Install pytest if not already in the image (ideally it should be for testing)
+                        pytest # Assuming tests are configured to run
+                        '''
+                    }
+                }
+                stage('Test Speciality Service') {
+                    agent {
+                        docker {
+                            image "${SPECIALITY_IMAGE}:${BUILD_NUMBER}"
+                            args '-u 0:0'
+                        }
+                    }
+                    steps {
+                        sh '''
+                        echo "Running tests for Speciality Service..."
+                        python -m pip install pytest # Install pytest if not already in the image (ideally it should be for testing)
+                        pytest # Assuming tests are configured to run
+                        '''
+                    }
+                }
+                stage('Test Frontend Service') {
+                    agent {
+                        docker {
+                            image "${FRONTEND_IMAGE}:${BUILD_NUMBER}"
+                            args '-u 0:0'
+                        }
+                    }
+                    steps {
+                        sh '''
+                        echo "Running tests for Frontend Service..."
+                        # Example for a JavaScript/Node.js frontend
+                        # npm install # Only if test dependencies are not in the image
+                        # npm test
+                        echo "Frontend tests not implemented yet, skipping."
+                        '''
+                    }
                 }
             }
         }

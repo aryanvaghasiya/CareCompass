@@ -1,0 +1,13 @@
+the best option for you is Option 1: build and use a 
+prebuilt Docker image that already contains PyTorch and other
+ heavy, slow-to-download dependencies. It’s the fastest, most
+  reproducible, and easiest to integrate into Jenkins without 
+  changing the host system.
+
+There are three requirements.txt files: each with their own dependencies
+that are very expensive to set up every time there is a build.
+Is there way so that everytime these requirements run, the 
+dependencies are already there prebuilt?
+
+Can we have a common prebuilt contains that will handle the 
+expensive building process in the building of the jenkinsfile.

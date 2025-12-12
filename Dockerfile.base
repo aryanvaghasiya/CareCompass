@@ -1,0 +1,36 @@
+# Dockerfile.base
+FROM python:3.11-slim
+
+LABEL maintainer="aryan.vaghasiya@iiitb.ac.in"
+
+# Minimal apt deps for many wheels; keep small
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential ca-certificates git \
+ && rm -rf /var/lib/apt/lists/*
+
+ENV VENV=/opt/venv
+RUN python -m venv $VENV
+ENV PATH="$VENV/bin:$PATH"
+
+# Upgrade pip first
+RUN pip install --upgrade pip setuptools wheel
+
+# Install heavyweight libs once (picked exact versions from your requirements.txt files)
+RUN pip install \
+    torch==2.5.1 \
+    torchvision==0.16.0 \
+    numpy==2.0.2 \
+    pandas==2.2.3 \
+    scikit-learn==1.5.2 \
+    spacy==3.8.2 \
+    fastapi==0.115.5 \
+    uvicorn==0.32.1 \
+    Flask==3.1.0 \
+    Flask-Cors==5.0.0 \
+    transformers==4.46.3 \
+    joblib==1.4.2 \
+    pydantic==2.10.1 \
+    pydantic_core==2.27.1
+
+WORKDIR /workspace
+CMD [ "bash" ]

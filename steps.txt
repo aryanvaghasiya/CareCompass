@@ -1,0 +1,202 @@
+Nice — I pulled the Jenkinsfile and the three `requirements` files you uploaded and analysed how your current pipeline builds the images and installs dependencies. Based on that, here’s a concrete, prioritized plan to implement **Option 1 — a prebuilt base Docker image that already contains the heavy dependencies (PyTorch, numpy, pandas, etc.)**, plus exact code and steps you can copy-paste.
+
+Files I inspected: your top requirements (contains `torch==2.5.1`, `pandas==2.2.3`, etc.), the other two requirements files (one has modern numpy/pandas pins, one has older pandas/numpy), and your Jenkinsfile.    
+
+---
+
+# Summary of findings (why optimize)
+
+* Your requirements include heavy packages (notably `torch` / `torchvision`) which are the main download/space/time cost. 
+* There are **inconsistent pins across the three requirements files** (e.g. `numpy==2.0.2` and `numpy==2.1.3` vs `numpy==1.23.5`), which risks pip building from source or installing incompatible wheels.   
+* Current pipeline creates a fresh venv and `pip install -r requirements.txt` inside the python stage which will re-download heavy wheels each time. The `Build Docker Images` stage builds three service images from their directories — if those service Dockerfiles install the heavy deps, they will re-download them during each docker build. 
+
+Goal: make service image builds **reuse** the heavy packages by baking them once into a base image and then using that base in each service Dockerfile. Also use build caching (`--cache-from`) in the pipeline to speed repeated builds.
+
+---
+
+# Plan & step-by-step instructions (apply in order)
+
+## 1) **Choose & freeze a Python runtime for the base image**
+
+Explanation: Pick a Python version for which wheels exist for your pinned packages (I recommend **Python 3.11** to match the Jenkinsfile Docker agent and wide wheel support). This prevents pip trying to compile numpy/pandas/torch from source.
+
+Action:
+
+* Decide `PYTHON=3.11` and include that in base image tags (e.g. `carecompass:py3.11-torch2.5.1`).
+
+## 2) **Harmonize / review your requirements files**
+
+Explanation: Mixed pins will create conflicts. Unify versions where reasonable (or use per-service requirement files but keep heavy deps in base image).
+
+Actions:
+
+* If `torch` and other heavy libs are used across services, **remove** them from service `requirements.txt` (or keep them but use `--no-deps` during service `pip install`) because the base image will already include them.
+* Update the old `requirements_main2_.txt` that pins `numpy==1.23.5` / `pandas==1.5.3` to match the other files **or** lock the whole project to a single compatible set. (One of your files uses `numpy==2.0.2` and another `numpy==1.23.5` — that will cause trouble).   
+
+Example quick rule:
+
+* Base image contains: `torch`, `torchvision`, `numpy`, `pandas`, `scikit-learn`, `spacy` (the heavyweight libs).
+* Service Dockerfiles only `pip install -r requirements.txt --no-deps` or have only lightweight service-specific requirements.
+
+## 3) **Create a base Dockerfile that pre-installs heavy dependencies**
+
+Explanation: build this image once; push to registry; service images will `FROM` it so `pip` inside service builds won’t need to download torch.
+
+Example `Dockerfile.base` — paste into a new repo folder, build and push:
+
+```dockerfile
+# Dockerfile.base
+FROM python:3.11-slim
+
+LABEL maintainer="you@example.com"
+
+# Minimal apt deps for many wheels; keep small
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential ca-certificates git \
+ && rm -rf /var/lib/apt/lists/*
+
+ENV VENV=/opt/venv
+RUN python -m venv $VENV
+ENV PATH="$VENV/bin:$PATH"
+
+# Upgrade pip first
+RUN pip install --upgrade pip setuptools wheel
+
+# Install heavyweight libs once (pick exact versions you want)
+RUN pip install \
+    torch==2.5.1 \
+    torchvision==0.16.0 || true \
+    numpy==2.0.2 \
+    pandas==2.2.3 \
+    scikit-learn==1.5.2 \
+    spacy==3.8.2
+
+# Optional: do not install service-specific deps here
+
+WORKDIR /workspace
+CMD [ "bash" ]
+```
+
+Notes:
+
+* Choose exact torch/torchvision wheel pair that matches CPU/GPU usage. GPU wheels differ enormously in size; prefer CPU wheel in CI unless you actually need CUDA.
+* If `torch==2.5.1` is in your requirements (it is), include that exact version in base image. 
+
+## 4) **Build and push the base image once**
+
+Commands (run on machine with Docker and credentials):
+
+```bash
+# build
+docker build -t yourdockerhubuser/carecompass:py3.11-torch2.5.1 -f Dockerfile.base .
+
+# login & push
+docker login -u YOUR_USER
+docker push YOUR_USER/carecompass:py3.11-torch2.5.1
+```
+
+Tag with whatever registry you use (`DockerHub` or private registry).
+
+## 5) **Modify each service Dockerfile to use the base image as FROM**
+
+Explanation: change the first line in `./main1/Dockerfile`, `./main2/Dockerfile`, and frontend `Dockerfile` to `FROM YOUR_USER/carecompass:py3.11-torch2.5.1` so they inherit pre-installed heavy libs.
+
+Example change:
+
+```dockerfile
+# old:
+# FROM python:3.11-slim
+
+# new:
+FROM YOUR_USER/carecompass:py3.11-torch2.5.1
+
+WORKDIR /app
+COPY requirements.txt .
+# avoid re-downloading heavy deps already in base:
+RUN pip install --upgrade pip setuptools wheel && pip install --no-deps -r requirements.txt
+COPY . .
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
+```
+
+Important: use `pip install --no-deps -r requirements.txt` (or remove the heavy libs from the service requirements) so pip won’t try to reinstall torch.
+
+## 6) **Update Jenkinsfile: pull base image and use Docker build cache**
+
+Explanation: before building service images in Jenkins, pull the base image (ensures cache-from works). When building, pass `--cache-from` so Docker can reuse layers from the pulled image and speed the build.
+
+Replace your existing `Build Docker Images` stage (or augment it) with something like:
+
+```groovy
+stage('Prepare base image & build service images') {
+  when { expression { !params.FAST_MODE } }
+  steps {
+    script {
+      def baseImage = "YOUR_USER/carecompass:py3.11-torch2.5.1"
+
+      // Pull base to allow --cache-from to reuse layers
+      sh "docker pull ${baseImage} || true"
+
+      // Build with cache-from and tag
+      sh """
+        docker build --cache-from ${baseImage} -t ${BANDIT_IMAGE}:${BUILD_NUMBER} ./main1
+        docker build --cache-from ${baseImage} -t ${SPECIALITY_IMAGE}:${BUILD_NUMBER} ./main2
+        docker build --cache-from ${baseImage} -t ${FRONTEND_IMAGE}:${BUILD_NUMBER} .
+      """
+    }
+  }
+}
+```
+
+Notes:
+
+* I moved from `docker.build(...)` to shell `docker build` to explicitly pass `--cache-from`. If you prefer the pipeline `docker.build`, you can pass the cache args as the second parameter:
+  `docker.build("${BANDIT_IMAGE}:${BUILD_NUMBER}", "--cache-from ${baseImage} ./main1")`
+* Make sure the Jenkins node has `docker pull` permission and enough disk space.
+
+## 7) **(Optional) Use `--no-cache` carefully and registry credentials**
+
+* Don’t use `--no-cache` — it forces rebuilds and defeats caching.
+* Ensure Jenkins `docker.withRegistry(...)` and credentials are set (your Jenkinsfile already references `dockerhub-credentials`). 
+
+## 8) **Test & iterate**
+
+* First, locally build the base image and push it — verify `docker pull YOUR_USER/carecompass:py3.11-torch2.5.1` works from the Jenkins host.
+* Update service Dockerfiles to `FROM` the base image and try building locally: `docker build --cache-from YOUR_USER/carecompass:py3.11-torch2.5.1 -t test-bandit ./main1`.
+* When successful locally, run the Jenkins pipeline and watch the `Build Docker Images` stage: it should reuse the base image layers and not re-download torch.
+
+---
+
+# Additional optimizations & practical tips
+
+1. **Tag base image semantically**: e.g. `py3.11-torch2.5.1-numpy2.0.2` — makes it clear what is baked in and you can avoid surprises.
+
+2. **Remove heavy libs from service requirements** (or move heavy libs to a `requirements-base.txt`) so service `requirements.txt` only contains small/fast deps.
+
+3. **Use `--no-deps` in service Dockerfiles** (as above) to avoid pip re-resolving/installing heavy packages.
+
+4. **Use a small base (slim) image and minimal apt installs** to keep base image size reasonable — only install OS packages needed by wheels.
+
+5. **Set up an image build pipeline**: when you need to update heavy libs, rebuild & push a new base image tag; then the normal pipeline will use it.
+
+6. **(Optional) Keep a pip wheelhouse** as a fallback — useful if you cannot host a base image. But the base image method is more robust.
+
+---
+
+# Quick answers to what will change after implementing this
+
+* **Network downloads per pipeline build**: instead of re-downloading the ~900 MB+ torch wheel each run, Jenkins will `docker pull` the base image (one-time large pull when image updated or on a new agent). After that, building service images will reuse cached layers — near-instant for dependency layers.
+* **Per-build disk usage**: much lower — only the service image diff layers and build context. The heavy dependency layer lives in the base image and is shared.
+* **Complexity**: small extra step to maintain base image, but big savings in build time and bandwidth.
+
+---
+
+# Concrete next step I can do for you right now
+
+Pick one and I’ll produce the exact files/patches:
+
+* A) “Create Dockerfile.base + build & push script” — I will output `Dockerfile.base` and a shell script you can run to build & push.
+* B) “Patch the three service Dockerfiles” — I will show the exact `FROM` replacement and `pip install --no-deps` changes ready to paste.
+* C) “Patch Jenkinsfile Build stage” — I will produce the updated Jenkinsfile stage that pulls the base image and adds `--cache-from` builds (ready to replace the current Build Docker Images stage).
+* D) Do all A+B+C together.
+
+Tell me which and I’ll generate the code/patch immediately.

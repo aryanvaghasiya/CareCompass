@@ -1,5 +1,4 @@
-# Use an official Python base image
-FROM python:3.10-slim
+FROM aryanvaghasiya/carecompass-base:py3.11-carecompass-base:torch-2.5.1
 
 # Set the working directory in the container
 WORKDIR /app
@@ -8,7 +7,7 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-deps -r requirements.txt
 
 # Copy the entire application to the container
 COPY . .

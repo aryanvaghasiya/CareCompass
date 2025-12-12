@@ -1,9 +1,9 @@
-FROM python:3.11-slim
+FROM aryanvaghasiya/carecompass-base:py3.11-carecompass-base:torch-2.5.1
 
 WORKDIR /app
 
-COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+COPY requirements.txt ./requirements.txt
+RUN pip install --no-deps -r ./requirements.txt
 
 COPY . .
 

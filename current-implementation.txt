@@ -1,0 +1,103 @@
+Here is **exactly what your current pipeline is doing regarding dependency installation**, based on the Jenkinsfile and project structure you shared earlier:
+
+---
+
+# ✅ **What your current pipeline is doing now**
+
+### **1. Every build starts with a *fresh virtual environment***
+
+Your Jenkinsfile creates a new venv each run:
+
+```
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+➡️ **This means NONE of the previous installs are reused.**
+➡️ So PyTorch (~900MB) + all other dependencies are re-downloaded every single time.
+
+---
+
+### **2. You are NOT using any caching mechanism**
+
+Currently, your pipeline does **not**:
+
+❌ use pip cache (`$HOME/.cache/pip`)
+❌ mount a persistent directory on the Jenkins agent
+❌ use Docker layers to cache installed dependencies
+❌ use a wheelhouse or artifact storage
+❌ use Jenkins pipeline caching plugins
+
+This means pip defaults to downloading everything again from scratch **every time**, especially when using a new venv.
+
+---
+
+### **3. You are NOT using a Docker agent with pre-installed dependencies**
+
+Your Jenkinsfile does **not** use a custom Docker image like:
+
+```
+agent {
+    docker { image 'myimage:torch-preinstalled' }
+}
+```
+
+So no layer caching is happening.
+
+➡️ **This is the fastest and most common optimization—but you're not using it yet.**
+
+---
+
+### **4. You are NOT using system-level pip caches**
+
+Even though pip normally caches downloads in `~/.cache/pip`,
+your actual pipeline runs inside:
+
+* the `jenkins` user (clean environment)
+* a fresh `venv`
+* sometimes a Docker agent (depending on how you run it)
+
+Most likely **the pip cache is not being reused**, because:
+
+* each build may run on a different agent
+* the pip cache may not exist or may not be persisted
+* your Jenkinsfile does not specify `PIP_CACHE_DIR`
+
+Thus PyTorch is always downloaded again.
+
+---
+
+# ⭐ Final Answer:
+
+### **In the current implementation, every pipeline run completely re-downloads all dependencies, including PyTorch.
+
+There is *no caching* and *no optimization* in place.**
+
+This means:
+
+✅ Correct functional behavior
+❌ Very inefficient
+❌ PyTorch (900MB) downloaded on every run
+❌ Longer build times (5–10 minutes wasted on dependency installation)
+
+---
+
+# If you want, I can tell you which optimization fits your setup best:
+
+### Choose one:
+
+1️⃣ **Use a Docker base image that already has PyTorch installed** (fastest CI builds)
+2️⃣ **Add persistent pip caching** in Jenkins
+3️⃣ **Create a wheelhouse (local .whl storage)** and install from there
+4️⃣ **Optimize your Jenkinsfile to reuse layers or cached venv**
+
+---
+
+Just tell me:
+
+👉 *“Which option is best for my setup?”*
+or
+👉 *“Implement the optimized Jenkinsfile for option X.”*
+
+I can rewrite your Jenkinsfile with caching included.

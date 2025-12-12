@@ -1,5 +1,4 @@
-# Use an official Python runtime as the base image
-FROM python:3.12-slim
+FROM aryanvaghasiya/carecompass-base:py3.11-carecompass-base:torch-2.5.1
 
 # Set the working directory in the container
 WORKDIR /code
@@ -9,7 +8,7 @@ COPY ./requirements.txt /code/requirements.txt
 COPY ./app/bandit_experience.py /code/
 
 # Install the Python dependencies
-RUN pip install --no-cache-dir -r /code/requirements.txt
+RUN pip install --no-deps -r /code/requirements.txt
 
 # Copy the application code
 COPY ./app /code/app
