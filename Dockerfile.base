@@ -18,7 +18,7 @@ RUN pip install --upgrade pip setuptools wheel
 # Install heavyweight libs once (picked exact versions from your requirements.txt files)
 RUN pip install \
     torch==2.5.1 \
-    torchvision==0.16.0 \
+    torchvision \
     numpy==2.0.2 \
     pandas==2.2.3 \
     scikit-learn==1.5.2 \
