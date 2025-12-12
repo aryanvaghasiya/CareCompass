@@ -262,18 +262,43 @@ pipeline {
         /***********************
          * Install & Test
          **********************/
+        /*---------------------------------------------------------------------------------------------------------------------------
         stage('Install Dependencies & Test') {
             when { expression { !params.FAST_MODE } }
             steps {
                 sh """
-                python3 -m venv venv
-                . venv/bin/activate
-                pip3 install -r requirements.txt
-                pytest --disable-warnings || true
-                """
+                  set -e
+                  python3 -m venv venv
+                  . venv/bin/activate
+                  python -m pip install --upgrade pip setuptools wheel
+                  pip install -r requirements.txt    
+                  pytest --disable-warnings || true
+                   """
             }
         }
-
+        ------------------------------------------------------------------------------------------------------------------------------*/
+        
+        //##############################################################################################
+        stage('Python setup & deps') {
+  agent {
+    docker {
+      image 'python:3.11-slim'
+      args '-u root:root'   // run as root so apt / pip works if needed
+    }
+  }
+  steps {
+    sh '''
+      set -e
+      python -m pip install --upgrade pip setuptools wheel
+      python -m venv venv
+      . venv/bin/activate
+      pip install --upgrade pip setuptools wheel
+      pip install -r requirements.txt
+      # run tests / lint etc. here
+    '''
+  }
+}
+//###################################################################################################
         stage('Skip Install & Test (FAST_MODE)') {
             when { expression { params.FAST_MODE } }
             steps {
@@ -393,6 +418,7 @@ pipeline {
         }
     }
 }
+
 
 
 
