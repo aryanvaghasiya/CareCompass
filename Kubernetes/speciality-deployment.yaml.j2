@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: speciality
-        image: aryanvaghasiya/speciality-service:{{ speciality_tag }}
+        image: aryanvaghasiya/speciality:{{ speciality_tag }}
         ports:
         - containerPort: 5000
         readinessProbe:
@@ -33,7 +33,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: speciality-service
+  name: speciality
 spec:
   selector:
     app: speciality
