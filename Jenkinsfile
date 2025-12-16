@@ -16,9 +16,9 @@ pipeline {
 
     environment {
         // DockerHub repositories
-        BANDIT_IMAGE        = "aryanvaghasiya/bandit-service"
-        SPECIALITY_IMAGE    = "aryanvaghasiya/speciality-service"
-        FRONTEND_IMAGE      = "aryanvaghasiya/frontend-service"
+        BANDIT_IMAGE        = "aryanvaghasiya/bandit"
+        SPECIALITY_IMAGE    = "aryanvaghasiya/speciality"
+        FRONTEND_IMAGE      = "aryanvaghasiya/frontend"
 
         // Ansible settings
         ANSIBLE_INVENTORY = "Ansible/hosts.ini"
@@ -185,9 +185,9 @@ pipeline {
                     echo "📥 Pulling latest Docker images from Docker Hub"
 
                     sh """
-                        docker pull aryanvaghasiya/bandit-service:latest
-                        docker pull aryanvaghasiya/speciality-service:latest
-                        docker pull aryanvaghasiya/frontend-service:latest
+                        docker pull aryanvaghasiya/bandit:latest
+                        docker pull aryanvaghasiya/speciality:latest
+                        docker pull aryanvaghasiya/frontend:latest
                     """
                 }
             }
@@ -208,6 +208,7 @@ pipeline {
         }
     }
 }
+
 
 
 
