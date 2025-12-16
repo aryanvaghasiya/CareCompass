@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: bandit
-        image: aryanvaghasiya/bandit-service:{{ bandit_tag }}
+        image: aryanvaghasiya/bandit:{{ bandit_tag }}
         ports:
         - containerPort: 8000
         readinessProbe:
@@ -33,7 +33,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: bandit-service
+  name: bandit
 spec:
   selector:
     app: bandit
