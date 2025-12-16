@@ -23,7 +23,7 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/aryanvaghasiya/CareCompass'
+                git branch: 'main2', url: 'https://github.com/aryanvaghasiya/CareCompass'
             }
         }
 
@@ -74,4 +74,5 @@ pipeline {
         }
     }
 }
+
 
