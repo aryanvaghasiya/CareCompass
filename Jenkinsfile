@@ -86,97 +86,110 @@ pipeline {
         /***********************
          * Docker Build / Push
          **********************/
-        stage('Build Docker Images') {
-            when { expression { !params.FAST_MODE } }
+        // stage('Build Docker Images') {
+        //     when { expression { !params.FAST_MODE } }
+        //     steps {
+        //         script {
+        //             echo "📦 Building Docker images..."
+
+        //             docker.build("${BANDIT_IMAGE}:${BUILD_NUMBER}", "./main1")
+        //             docker.build("${SPECIALITY_IMAGE}:${BUILD_NUMBER}", "./main2")
+        //             docker.build("${FRONTEND_IMAGE}:${BUILD_NUMBER}", ".")
+        //         }
+        //     }
+        // }
+
+        // stage('Skip Docker Build (FAST_MODE)') {
+        //     when { expression { params.FAST_MODE } }
+        //     steps {
+        //         echo "FAST_MODE enabled – skipping Docker image builds."
+        //     }
+        // }
+
+        // stage('Push Docker Images to DockerHub') {
+        //     when { expression { !params.FAST_MODE } }
+        //     steps {
+        //         script {
+        //             docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
+
+        //                 docker.image("${BANDIT_IMAGE}:${BUILD_NUMBER}").push()
+        //                 docker.image("${SPECIALITY_IMAGE}:${BUILD_NUMBER}").push()
+        //                 docker.image("${FRONTEND_IMAGE}:${BUILD_NUMBER}").push()
+
+        //                 // Push "latest"
+        //                 docker.image("${BANDIT_IMAGE}:${BUILD_NUMBER}").push("latest")
+        //                 docker.image("${SPECIALITY_IMAGE}:${BUILD_NUMBER}").push("latest")
+        //                 docker.image("${FRONTEND_IMAGE}:${BUILD_NUMBER}").push("latest")
+        //             }
+        //         }
+        //     }
+        // }
+
+        // stage('Skip Docker Push (FAST_MODE)') {
+        //     when { expression { params.FAST_MODE } }
+        //     steps {
+        //         echo "FAST_MODE enabled – skipping Docker push to DockerHub."
+        //     }
+        // }
+
+        // /***********************
+        //  * Prune Old Images
+        //  **********************/
+        // stage('Prune Old Docker Images') {
+        //     when { expression { !params.FAST_MODE } }
+        //     steps {
+        //         script {
+        //             echo "🧹 Cleaning up old Docker images..."
+
+        //             def images = [
+        //                 BANDIT_IMAGE,
+        //                 SPECIALITY_IMAGE,
+        //                 FRONTEND_IMAGE
+        //             ]
+
+        //             images.each { img ->
+        //                 sh """
+        //                 echo "Pruning old images for ${img}"
+
+        //                 # List all images of this repo, extract tags, sort numerically (latest = highest)
+        //                 TAGS=\$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "${img}" | grep -v latest | sed 's/.*://' | sort -nr)
+
+        //                 # Count how many exist
+        //                 COUNT=\$(echo "\$TAGS" | wc -l)
+
+        //                 # If more than 2, delete older ones
+        //                 if [ "\$COUNT" -gt 2 ]; then
+        //                     # Skip top 2 tags, delete the rest
+        //                     OLD_TAGS=\$(echo "\$TAGS" | tail -n +3)
+
+        //                     for TAG in \$OLD_TAGS; do
+        //                         echo "Removing old image: ${img}:\$TAG"
+        //                         docker rmi "${img}:\$TAG" || true
+        //                     done
+        //                 fi
+        //                 """
+        //             }
+        //         }
+        //     }
+        // }
+
+        // stage('Skip Prune (FAST_MODE)') {
+        //     when { expression { params.FAST_MODE } }
+        //     steps {
+        //         echo "FAST_MODE enabled – skipping Docker prune."
+        //     }
+        // }
+        stage('Pull Docker Images') {
             steps {
                 script {
-                    echo "📦 Building Docker images..."
+                    echo "📥 Pulling latest Docker images from Docker Hub"
 
-                    docker.build("${BANDIT_IMAGE}:${BUILD_NUMBER}", "./main1")
-                    docker.build("${SPECIALITY_IMAGE}:${BUILD_NUMBER}", "./main2")
-                    docker.build("${FRONTEND_IMAGE}:${BUILD_NUMBER}", ".")
+                    sh """
+                        docker pull aryanvaghasiya/bandit-service:latest
+                        docker pull aryanvaghasiya/speciality-service:latest
+                        docker pull aryanvaghasiya/frontend-service:latest
+                    """
                 }
-            }
-        }
-
-        stage('Skip Docker Build (FAST_MODE)') {
-            when { expression { params.FAST_MODE } }
-            steps {
-                echo "FAST_MODE enabled – skipping Docker image builds."
-            }
-        }
-
-        stage('Push Docker Images to DockerHub') {
-            when { expression { !params.FAST_MODE } }
-            steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
-
-                        docker.image("${BANDIT_IMAGE}:${BUILD_NUMBER}").push()
-                        docker.image("${SPECIALITY_IMAGE}:${BUILD_NUMBER}").push()
-                        docker.image("${FRONTEND_IMAGE}:${BUILD_NUMBER}").push()
-
-                        // Push "latest"
-                        docker.image("${BANDIT_IMAGE}:${BUILD_NUMBER}").push("latest")
-                        docker.image("${SPECIALITY_IMAGE}:${BUILD_NUMBER}").push("latest")
-                        docker.image("${FRONTEND_IMAGE}:${BUILD_NUMBER}").push("latest")
-                    }
-                }
-            }
-        }
-
-        stage('Skip Docker Push (FAST_MODE)') {
-            when { expression { params.FAST_MODE } }
-            steps {
-                echo "FAST_MODE enabled – skipping Docker push to DockerHub."
-            }
-        }
-
-        /***********************
-         * Prune Old Images
-         **********************/
-        stage('Prune Old Docker Images') {
-            when { expression { !params.FAST_MODE } }
-            steps {
-                script {
-                    echo "🧹 Cleaning up old Docker images..."
-
-                    def images = [
-                        BANDIT_IMAGE,
-                        SPECIALITY_IMAGE,
-                        FRONTEND_IMAGE
-                    ]
-
-                    images.each { img ->
-                        sh """
-                        echo "Pruning old images for ${img}"
-
-                        # List all images of this repo, extract tags, sort numerically (latest = highest)
-                        TAGS=\$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "${img}" | grep -v latest | sed 's/.*://' | sort -nr)
-
-                        # Count how many exist
-                        COUNT=\$(echo "\$TAGS" | wc -l)
-
-                        # If more than 2, delete older ones
-                        if [ "\$COUNT" -gt 2 ]; then
-                            # Skip top 2 tags, delete the rest
-                            OLD_TAGS=\$(echo "\$TAGS" | tail -n +3)
-
-                            for TAG in \$OLD_TAGS; do
-                                echo "Removing old image: ${img}:\$TAG"
-                                docker rmi "${img}:\$TAG" || true
-                            done
-                        fi
-                        """
-                    }
-                }
-            }
-        }
-
-        stage('Skip Prune (FAST_MODE)') {
-            when { expression { params.FAST_MODE } }
-            steps {
-                echo "FAST_MODE enabled – skipping Docker prune."
             }
         }
 
@@ -187,14 +200,15 @@ pipeline {
             steps {
                 sh """
                 ansible-playbook -i ${ANSIBLE_INVENTORY} ${ANSIBLE_PLAYBOOK} \
-                    -e bandit_tag=${BUILD_NUMBER} \
-                    -e speciality_tag=${BUILD_NUMBER} \
-                    -e frontend_tag=${BUILD_NUMBER}
+                    -e bandit_tag=latest \
+                    -e speciality_tag=latest \
+                    -e frontend_tag=latest
                 """
             }
         }
     }
 }
+
 
 
 
