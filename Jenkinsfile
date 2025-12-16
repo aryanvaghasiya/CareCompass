@@ -57,24 +57,24 @@ pipeline {
         
         //##############################################################################################
         stage('Python setup & deps') {
-  agent {
-    docker {
-      image 'python:3.11-slim'
-      args '-u root:root'   // run as root so apt / pip works if needed
-    }
-  }
-  steps {
-    sh '''
-      set -e
-      python -m pip install --upgrade pip setuptools wheel
-      python -m venv venv
-      . venv/bin/activate
-      pip install --upgrade pip setuptools wheel
-      pip install -r requirements.txt
-      # run tests / lint etc. here
-    '''
-  }
-}
+          agent {
+            docker {
+              image 'python:3.11-slim'
+              args '-u root:root'   // run as root so apt / pip works if needed
+            }
+          }
+          steps {
+            sh '''
+              set -e
+              python -m pip install --upgrade pip setuptools wheel
+              python -m venv venv
+              . venv/bin/activate
+              pip install --upgrade pip setuptools wheel
+              pip install -r requirements.txt
+              # run tests / lint etc. here
+            '''
+          }
+        }
 //###################################################################################################
         stage('Skip Install & Test (FAST_MODE)') {
             when { expression { params.FAST_MODE } }
@@ -208,6 +208,7 @@ pipeline {
         }
     }
 }
+
 
 
 
