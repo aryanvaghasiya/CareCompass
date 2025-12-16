@@ -4,9 +4,9 @@
   vars:
     # These are passed from Jenkins:
     # -e bandit_tag=5 -e speciality_tag=5 -e frontend_tag=5
-    bandit_image: "aryanvaghasiya/bandit-service"
-    speciality_image: "aryanvaghasiya/speciality-service"
-    frontend_image: "aryanvaghasiya/frontend-service"
+    bandit_image: "aryanvaghasiya/bandit"
+    speciality_image: "aryanvaghasiya/speciality"
+    frontend_image: "aryanvaghasiya/frontend"
 
   tasks:
 
