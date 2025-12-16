@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: aryanvaghasiya/frontend-service:{{ frontend_tag }}
+        image: aryanvaghasiya/frontend:{{ frontend_tag }}
         ports:
         - containerPort: 5001
         readinessProbe:
@@ -33,7 +33,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: frontend-service
+  name: frontend
 spec:
   selector:
     app: frontend
