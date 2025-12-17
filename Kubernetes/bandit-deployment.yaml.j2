@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: bandit
-        image: aryanvaghasiya/bandit:{{ bandit_tag }}
+        image: {{ bandit_image }}:{{ bandit_tag }}
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
