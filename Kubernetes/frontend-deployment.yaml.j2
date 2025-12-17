@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: aryanvaghasiya/frontend:{{ frontend_tag }}
+        image: {{ frontend_image }}:{{ frontend_tag }}
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 5001
