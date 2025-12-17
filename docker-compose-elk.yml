@@ -1,7 +1,7 @@
 services:
-
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.18
+    # Changed to match your local image name
+    image: docker-elk-elasticsearch:latest 
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -18,7 +18,8 @@ services:
       - elk
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:7.17.18
+    # Changed to match your local image name
+    image: docker-elk-kibana:latest
     container_name: kibana
     ports:
       - "5601:5601"
@@ -28,7 +29,8 @@ services:
       - elk
 
   filebeat:
-    image: docker.elastic.co/beats/filebeat:7.17.18
+    # Changed to match your local image name
+    image: docker-elk-filebeat:latest
     container_name: filebeat
     user: root
     volumes:
