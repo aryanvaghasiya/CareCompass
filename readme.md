@@ -1,163 +1,107 @@
-# 🩺 **CareCompass – MLOps-Driven Doctor Recommendation System**
+# 🏥 CareCompass
 
-An end-to-end Machine Learning + MLOps pipeline for automated **doctor recommendation**, built using **Python, ML, Docker, Kubernetes, Jenkins CI/CD, and Ansible**.
+**MLOps-Driven Doctor Recommendation System**
 
----
-
-## 📌 **Project Overview**
-
-CareCompass is an intelligent healthcare recommendation platform that predicts the **best-suited doctor** for a patient based on symptoms, disease descriptions, and doctor attributes.
-The project demonstrates a complete **MLOps pipeline** that automates:
-
-* Model training
-* Model versioning and packaging
-* Dockerization
-* CI/CD using Jenkins
-* Automated deployment using Kubernetes
-* Infrastructure provisioning using Ansible
-
-This repository is ideal for demonstrating practical **MLOps**, **ML model deployment**, and **DevOps integration** in real-world healthcare AI applications.
+CareCompass is a microservices-based healthcare recommendation system that takes patient symptoms and recommends suitable medical specialists and doctors.
+The project demonstrates **MLOps + DevOps practices** using **Docker, Kubernetes (Minikube), Ansible, Jenkins, and ELK Stack**.
 
 ---
 
-## 🚀 **Key Features**
+## 🧩 System Architecture
 
-### 🔹 **Doctor Recommendation System (ML Model)**
+The system consists of **three independent microservices**:
 
-* Uses disease data, symptom descriptions, tests, and medication information
-* Maps patient symptoms → disease category → doctor specialty
-* Ranks doctors based on:
-
-  * Ratings
-  * Experience
-  * Availability
-  * Distance
-  * Cost
-
-### 🔹 **Full MLOps Pipeline**
-
-* Continuous Integration (CI) using Jenkins
-* Continuous Delivery (CD) with Docker + Kubernetes
-* Automated environment setup using Ansible
-* Model training scripts with reproducible pipelines
-
-### 🔹 **Containerized Microservices**
-
-* ML model served through a REST API
-* Packaged using Docker
-* Scalable deployment via Kubernetes
-
-### 🔹 **Data-Driven Predictions**
-
-* Disease–Symptoms dataset
-* Doctor attributes and scoring dataset
+| Service                  | Technology       | Purpose                      | Port   |
+| ------------------------ | ---------------- | ---------------------------- | ------ |
+| **Bandit Service**       | FastAPI          | Doctor recommendation logic  | `8000` |
+| **Speciality Predictor** | Flask            | Predicts medical specialties | `5000` |
+| **Frontend**             | FastAPI + Jinja2 | Web UI                       | `5001` |
 
 ---
-<!-- 
-## 📂 **Project Structure**
+
+## 📁 Project Structure
 
 ```
 CareCompass/
-│── data/
-│   ├── updated_dataframe.csv
-│   ├── doctors_data_multireward.csv
 │
-│── model/
-│   ├── model_training.py
-│   ├── recommender.py
-│   ├── preprocess.py
-│   ├── trained_model.pkl
-│
-│── app/
-│   ├── app.py (API layer)
-│   ├── utils.py
-│   ├── templates/
-│   ├── static/
-│
-│── deployment/
+├── main1/                      # Bandit Service
+│   ├── app/
 │   ├── Dockerfile
-│   ├── kubernetes/
-│   │   ├── deployment.yaml
-│   │   ├── service.yaml
-│   ├── ansible/
-│       ├── playbook.yml
+│   └── requirements.txt
 │
-│── Jenkinsfile
-│── requirements.txt
-│── README.md
+├── main2/                      # Speciality Predictor
+│   ├── server.py
+│   ├── Dockerfile
+│   └── requirements.txt
+│
+├── templates/                  # Frontend HTML templates
+├── static/                     # Frontend static files
+├── app.py                      # Frontend FastAPI app
+├── Dockerfile                  # Frontend Dockerfile
+├── requirements.txt            # Frontend dependencies
+│
+├── docker-compose.yml          # Local multi-service execution
+│
+├── kubernetes/                 # Kubernetes manifests
+│   ├── bandit-deployment.yaml
+│   ├── speciality-deployment.yaml
+│   ├── frontend-deployment.yaml
+│   └── services.yaml
+│
+├── Ansible/
+│   ├── deploy.yml              # Ansible deployment playbook
+│   ├── hosts.ini               # Inventory
+│   └── vault.yml               # Encrypted secrets (Ansible Vault)
+│
+├── Jenkinsfile
+└── README.md
 ```
-
-*(Structure may vary slightly depending on repository contents — adjust as needed.)*
-
---- -->
-
-## 🧠 **Model Training Details**
-
-### **Training Data Features**
-
-#### **Patient/Disease Features (updated_dataframe.csv):**
-
-* disease
-* symptoms
-* reason/description
-* tests & procedures
-* medications
-
-#### **Doctor Features (doctors_data_multireward.csv):**
-
-* specialty
-* ratings
-* experience
-* distance from patient
-* availability
-* cost
-
-These features together power the two-step recommendation logic:
-
-1. Predict correct **doctor specialty** for a symptom/disease
-2. Rank doctors within that specialty
 
 ---
 
-## 🛠️ **Tech Stack**
+## 🚀 Option 1: Run Manually (No Docker, No Jenkins)
 
-### **Machine Learning**
+### Prerequisites
 
-* Python, Jinja2
-* Scikit-learn
-* Pandas, NumPy
-* Torch, Joblib
-* FastAPI, Pydantic
+* Python 3.10+
+* pip
+* virtualenv
 
-### **MLOps**
-
-* Jenkins
-* Docker
-* Kubernetes (Minikube)
-* Ansible
-
-### **Version Control**
-
-* Git + GitHub
-
----
-
-## 🐳 **Docker Setup**
-
-Build the image:
+### Setup
 
 ```bash
-//in root directory
-docker compose up --build
+git clone https://github.com/aryanvaghasiya/CareCompass
+cd CareCompass
+
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-<!-- Run the container:
+### Run services (open **3 terminals**)
+
+#### 1️⃣ Bandit Service
 
 ```bash
-docker run -p 5000:5000 carecompass-app
-``` -->
+cd main1
+uvicorn app.server:app --host 0.0.0.0 --port 8000
+```
 
-Access the app at:
+#### 2️⃣ Speciality Predictor
+
+```bash
+cd main2
+python server.py
+```
+
+#### 3️⃣ Frontend
+
+```bash
+cd ..
+uvicorn app:app --host 0.0.0.0 --port 5001
+```
+
+### Access UI
 
 ```
 http://localhost:5001
@@ -165,107 +109,148 @@ http://localhost:5001
 
 ---
 
-## ☸️ **Deployment**
+## 🐳 Option 2: Run Manually Using Docker Compose (Recommended)
 
-Using Minikube (Manual Option):
+### Prerequisites
+
+* Docker
+* Docker Compose
+
+### Run all services
 
 ```bash
-minikube start
-kubectl apply -f deployment/kubernetes/deployment.yaml
-kubectl apply -f deployment/kubernetes/service.yaml
+git clone https://github.com/aryanvaghasiya/CareCompass
+cd CareCompass
+docker compose up --build
 ```
 
-Check running pods:
+### Access services
+
+| Service        | URL                                                            |
+| -------------- | -------------------------------------------------------------- |
+| Frontend       | [http://localhost:5001](http://localhost:5001)                 |
+| Bandit API     | [http://localhost:8000/docs](http://localhost:8000/docs)       |
+| Speciality API | [http://localhost:8082/predict](http://localhost:8082/predict) |
+
+This option is ideal for **local testing and demos** without Kubernetes.
+
+---
+
+## ☸️ Option 3: Manual Kubernetes Deployment (Minikube + Ansible, No Jenkins)
+
+This option demonstrates **real production-style deployment** without CI/CD automation.
+
+### Prerequisites
+
+* Docker
+* Minikube
+* kubectl
+* Ansible
+
+---
+
+### Step 1: Start Minikube
+
+```bash
+minikube start --driver=docker
+kubectl get nodes
+```
+
+---
+
+### Step 2: Deploy Using Ansible (Manual)
+
+Ansible is used as the **orchestration layer**.
+Inside the Ansible playbook:
+
+✔ Kubernetes YAMLs are templated
+✔ `kubectl apply` commands are executed
+✔ Rollout status is verified using `kubectl rollout status`
+
+Run deployment manually:
+
+```bash
+ansible-playbook -i Ansible/hosts.ini Ansible/deploy.yml --ask-vault-pass
+```
+
+🔐 You will be prompted for the **Ansible Vault password**.
+
+---
+
+### Step 3: Verify Deployment
 
 ```bash
 kubectl get pods
+kubectl get services
 ```
 
-Expose service:
+To access frontend:
 
 ```bash
-minikube service carecompass-service
+minikube service frontend --url
 ```
 
 ---
 
-## ⚙️ **CI/CD Pipeline (Jenkins)**
+## 🔐 Ansible Vault (Secrets Management)
 
-The **Jenkinsfile** automates:
+Sensitive values (image names, tags, secrets) are encrypted using **Ansible Vault**.
 
-1. Pulling latest code from GitHub
-2. Creating Python virtual environment
-3. Installing dependencies
-4. Running model training
-5. Building and pushing Docker image
-6. Deploying to Kubernetes using Ansible
+Edit vault file:(pass in readme comments)
+<!-- ansible vault pass-> aryan --->
+```bash
+ansible-vault edit Ansible/vault.yml
+```
 
-
----
-
-## 📦 **Ansible Deployment Automation**
-
-Steps automated:
-
-* Install Docker, Kubernetes tools, dependencies
-* Create and configure cluster nodes
-* Apply deployment manifests
-* Expose services
-
-Run manually:
+Vault is unlocked during deployment using:
 
 ```bash
-ansible-playbook -i host.ini deploy.yml \
-    -e bandit_image=aryanvaghasiya/bandit-service \
-    -e speciality_image=aryanvaghasiya/speciality-service \
-    -e frontend_image=aryanvaghasiya/frontend-service \
-    -e bandit_tag=latest \
-    -e speciality_tag=latest \
-    -e frontend_tag=latest
-
+--ask-vault-pass
 ```
+
+or via Jenkins credentials (CI/CD mode).
 
 ---
 
-<!-- ## 🧪 **API Usage Example**
+## 📊 Logging (ELK Stack)
 
-POST request:
+The project supports centralized logging using:
 
-```json
-{
-  "symptoms": "fever, headache, dizziness"
-}
-```
+* **Filebeat**
+* **Elasticsearch**
+* **Kibana**
 
-Response:
-
-```json
-{
-  "specialty": "General Physician",
-  "recommended_doctors": [
-    {
-      "name": "Dr. A Sharma",
-      "rating": 4.8,
-      "experience": 12,
-      "distance": 3.1
-    }
-  ]
-}
-```
-
---- -->
-
-## 📈 **Future Improvements**
-
-* Real-time model monitoring with Prometheus & Grafana
-* A/B testing for doctor ranking models
-* AutoML pipeline for model retraining
-* Real user feedback to re-rank recommendations
+Logs from all microservices are collected and visualized in Kibana.
 
 ---
 
-## 🤝 **Contributors**
+## ✅ Key DevOps / MLOps Features
 
-IMT2022046 - Aryan Vaghasiya
-IMT2022048 - Areen Vaghasiya
-IMT2022109 - Madhav S. Patil
+* Microservices architecture
+* Dockerized services
+* Kubernetes orchestration (Minikube)
+* Ansible-based deployments
+* Ansible Vault for secret management
+* Jenkins CI/CD (optional)
+* Centralized logging using ELK Stack
+
+---
+
+## 🧪 End-to-End Workflow
+
+1. User enters symptoms in UI
+2. Frontend calls Speciality Predictor
+3. Speciality Predictor returns top specialties
+4. Frontend calls Bandit Service
+5. Bandit Service returns doctor recommendations
+6. Results rendered in UI
+
+---
+
+## 👥 Collaborators
+
+* **Aryan Vaghasiya**
+* **Areen Vaghasiya**
+* **Madhav Patil**
+
+---
