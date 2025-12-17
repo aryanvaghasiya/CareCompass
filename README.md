@@ -60,7 +60,7 @@ CareCompass/
 ---
 
 ## 🚀 Option 1: Run Manually (No Docker, No Jenkins)
-go to option 2a if you don't want to build images(takes time)
+go to OPTION 2A if you don't want to build images(takes time)
 and use already existing images for this project
 ### Prerequisites
 
