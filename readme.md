@@ -212,16 +212,131 @@ or via Jenkins credentials (CI/CD mode).
 
 ---
 
-## 📊 Logging (ELK Stack)
+## 📊 Option 4: Manual ELK Stack Setup (Centralized Logging)
 
-The project supports centralized logging using:
+This option enables **centralized log collection and visualization** for all Kubernetes pods using the **ELK Stack (Elasticsearch, Filebeat, Kibana)**.
 
-* **Filebeat**
-* **Elasticsearch**
-* **Kibana**
+---
 
-Logs from all microservices are collected and visualized in Kibana.
+### 🔧 Prerequisites
 
+* Docker
+* Minikube (running)
+* kubectl
+* Internet access (to pull Elastic manifests)
+
+Verify:
+
+```bash
+docker --version
+kubectl version --client
+minikube status
+```
+
+---
+
+### 🟢 Step 1: Create Logging Namespace
+
+```bash
+kubectl create namespace logging
+```
+
+---
+
+### 🟡 Step 2: Deploy Elasticsearch
+
+Apply:
+
+```bash
+kubectl apply -f kubernetes/logging/elasticsearch.yaml
+kubectl get pods -n logging
+```
+
+---
+
+### 🟠 Step 3: Deploy Kibana
+
+Apply:
+
+```bash
+kubectl apply -f kubernetes/logging/kibana.yaml
+kubectl get pods -n logging
+```
+
+Expose Kibana UI:
+
+```bash
+minikube service kibana -n logging --url
+```
+
+Open the URL in your browser.
+
+---
+
+### 🔵 Step 4: Deploy Filebeat (Log Collector)
+
+Filebeat runs as a **DaemonSet** and collects logs from all Kubernetes pods.
+
+Download Filebeat manifest:
+
+```bash
+curl -O https://raw.githubusercontent.com/elastic/beats/7.17/deploy/kubernetes/filebeat-kubernetes.yaml
+```
+
+Edit the file and update the Elasticsearch output:
+
+```yaml
+output.elasticsearch:
+  hosts: ["http://elasticsearch.logging.svc.cluster.local:9200"]
+```
+
+Apply Filebeat:
+
+```bash
+kubectl apply -f filebeat-kubernetes.yaml
+kubectl get pods -n kube-system
+```
+
+---
+
+### 🟣 Step 5: Configure Kibana to View Logs
+
+1. Open Kibana UI
+2. Click **Explore on my own**
+3. Go to **Stack Management → Index Patterns**
+4. Create index pattern:
+
+   ```
+   filebeat-*
+   ```
+5. Select `@timestamp` as the time field
+6. Go to **Discover**
+
+You should now see logs from:
+
+* Bandit service
+* Speciality predictor
+* Frontend service
+
+---
+
+### 🔍 Step 6: Verify Logs Manually
+
+```bash
+kubectl logs deployment/bandit-deployment
+kubectl logs deployment/speciality-deployment
+kubectl logs deployment/frontend-deployment
+```
+
+Compare with logs visible in Kibana.
+
+---
+
+## 🧹 Cleanup (Optional)
+
+```bash
+kubectl delete namespace logging
+```
 ---
 
 ## ✅ Key DevOps / MLOps Features
