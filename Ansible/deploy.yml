@@ -1,6 +1,9 @@
 ---
 - hosts: master
   become: no
+
+  vars_files:
+    - vault.yml
   vars:
     # These are passed from Jenkins:
     # -e bandit_tag=5 -e speciality_tag=5 -e frontend_tag=5
