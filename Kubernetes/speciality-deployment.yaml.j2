@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: speciality
-        image: aryanvaghasiya/speciality:{{ speciality_tag }}
+        image: {{ speciality_image }}:{{ speciality_tag }}
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 5000
