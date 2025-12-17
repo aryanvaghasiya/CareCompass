@@ -60,7 +60,8 @@ CareCompass/
 ---
 
 ## 🚀 Option 1: Run Manually (No Docker, No Jenkins)
-
+go to option 2a if you don't want to build images(takes time)
+and use already existing images for this project
 ### Prerequisites
 
 * Python 3.10+
@@ -135,6 +136,73 @@ docker compose up --build
 This option is ideal for **local testing and demos** without Kubernetes.
 
 ---
+
+## 🐳 Option 2A: Run Using Pre-Built Docker Images (Docker Hub)
+
+This option runs the complete system using **pre-built Docker images pulled directly from Docker Hub**.
+It avoids building images locally and is **faster, simpler, and closer to real production deployment**.
+
+### Docker Images Used
+
+| Service              | Docker Image                       |
+| -------------------- | ---------------------------------- |
+| Bandit Service       | `aryanvaghasiya/bandit:latest`     |
+| Speciality Predictor | `aryanvaghasiya/speciality:latest` |
+| Frontend             | `aryanvaghasiya/frontend:latest`   |
+
+---
+
+### Prerequisites
+
+* Docker
+* Docker Compose
+
+---
+
+### Step 1: Pull Images from Docker Hub
+
+```bash
+docker pull aryanvaghasiya/bandit:latest
+docker pull aryanvaghasiya/speciality:latest
+docker pull aryanvaghasiya/frontend:latest
+```
+
+---
+
+### Step 2: Run Containers Using Docker Compose
+
+Ensure `docker-compose.yml` uses **image** instead of **build**:
+
+```yaml
+services:
+  bandit:
+    image: aryanvaghasiya/bandit:latest
+    ports:
+      - "8000:8000"
+
+  speciality:
+    image: aryanvaghasiya/speciality:latest
+    ports:
+      - "8082:5000"
+
+  frontend:
+    image: aryanvaghasiya/frontend:latest
+    ports:
+      - "5001:5001"
+    depends_on:
+      - bandit
+      - speciality
+```
+
+Run:
+
+```bash
+docker compose up
+```
+
+### Step 3: Access Application same as in opt2
+---
+
 
 ## ☸️ Option 3: Manual Kubernetes Deployment (Minikube + Ansible, No Jenkins)
 
