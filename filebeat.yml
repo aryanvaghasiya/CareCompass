@@ -9,5 +9,9 @@ processors:
 
 output.elasticsearch:
   hosts: ["http://elasticsearch:9200"]
-  username: "elastic"
-  password: ""
+  # username and password are no longer required
+  # username: "elastic" 
+  # password: ""
+
+# Optional: Prevents Filebeat from failing if it checks for X-Pack features
+setup.ilm.enabled: false
